@@ -1119,38 +1119,9 @@
 
           // ── Exportar / Importar JSON (backup) ──
 
-          const handleExportJSON = () => {
-            const data = { ingredients, salesPerDay, targetDate };
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = 'dados_estoque.json'; a.click();
-            URL.revokeObjectURL(url);
-          };
-
-          const fileInputRef = useRef(null);
-
-          const handleImportJSON = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (evt) => {
-              try {
-                const data = JSON.parse(evt.target.result);
-                if (data.ingredients) setIngredients(mergeIngredients(DEFAULT_INGREDIENTS, data.ingredients));
-                if (data.salesPerDay !== undefined) setSalesPerDay(data.salesPerDay);
-                if (data.targetDate) setTargetDate(data.targetDate);
-                alert('Dados importados com sucesso!');
-              } catch (err) { alert('Arquivo inválido.'); }
-            };
-            reader.readAsText(file);
-            e.target.value = '';
-          };
 
           const handleLogout = () => auth.signOut();
 
-          const [pasteMode, setPasteMode] = useState(false);
-          const [pasteData, setPasteData] = useState('');
           const [expandedRow, setExpandedRow] = useState(null);
           const [useIdealPrice, setUseIdealPrice] = useState(false);
           const [summaryExcluded, setSummaryExcluded] = useState({});
@@ -1221,25 +1192,6 @@
             setIngredients(prev => prev.map(item => 
               item.id === id ? { ...item, [field]: field === 'idealPrice' ? value : (parseFloat(value) || 0) } : item
             ))
-          }
-
-          const handleImportPaste = () => {
-            const numbers = pasteData.split(/\s+/).map(n => n.replace(',', '.')).filter(n => n !== '' && !isNaN(parseFloat(n)));
-            
-            if (numbers.length < 4) {
-              alert("Por favor, cole os 4 valores em ordem (açúcar, farinha, óleo, fermento)");
-              return;
-            }
-
-            setIngredients(prev => prev.map((item, idx) => {
-              if (idx < 4) {
-                return { ...item, currentStock: parseFloat(numbers[idx]) };
-              }
-              return item;
-            }));
-            
-            setPasteMode(false);
-            setPasteData('');
           }
 
           const handleDateChange = (value) => {
@@ -1383,7 +1335,7 @@
                     type="number"
                     className="input-highlight"
                     value={salesPerDay} 
-                    onChange={(e) => setSalesPerDay(e.target.value)}
+                    onChange={(e) => setSalesPerDay(parseFloat(e.target.value) || 0)}
                   />
                 </div>
                 <div className="input-group relative">
@@ -1420,16 +1372,6 @@
                     <span className={`sync-dot ${syncStatus}`}></span>
                     {syncStatus === 'ok' ? 'Salvo' : syncStatus === 'saving' ? 'Salvando...' : syncStatus === 'error' ? 'Erro' : ''}
                   </span>
-                  <input type="file" accept=".json" ref={fileInputRef} style={{ display: 'none' }} onChange={handleImportJSON} />
-                  <button className="import-btn" onClick={() => fileInputRef.current.click()} title="Importar dados de um arquivo JSON">
-                    ↑ Importar
-                  </button>
-                  <button className="import-btn" onClick={handleExportJSON} title="Baixar backup dos dados atuais">
-                    ↓ Exportar
-                  </button>
-                  <button className="import-btn" onClick={() => setPasteMode(true)}>
-                    Colar Estoque
-                  </button>
                   <div className="user-bar">
                     <img className="user-avatar" src={user.photoURL} alt="" />
                     <button className="logout-btn" onClick={handleLogout}>Sair</button>
@@ -1437,28 +1379,6 @@
                 </div>
               </section>
 
-              {pasteMode && (
-                <div className="modal-overlay" onClick={() => setPasteMode(false)}>
-                  <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                    <h2>Importar Estoque</h2>
-                    <div className="paste-area">
-                      <label style={{ marginBottom: '-5px', fontSize: '0.7rem' }}>
-                        Copie 4 valores da planilha (Açúcar, Farinha, Óleo, Fermento)
-                      </label>
-                      <textarea 
-                        placeholder="Exemplo:&#10;190&#10;313&#10;166&#10;408" 
-                        autoFocus
-                        value={pasteData}
-                        onChange={(e) => setPasteData(e.target.value)}
-                      />
-                      <div className="paste-actions">
-                        <button className="cancel-btn" onClick={() => setPasteMode(false)}>Cancelar</button>
-                        <button className="confirm-btn" onClick={handleImportPaste}>Atualizar Estoque</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               <div className={`ingredients-list ${expandedRow ? 'has-expanded' : ''}`}>
                 <div className="list-header">
