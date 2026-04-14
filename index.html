@@ -1,0 +1,1733 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Estoque • Bolos</title>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Bibliotecas Locais (para funcionar offline e via protocolo file://) -->
+    <script src="libs/react.production.min.js"></script>
+    <script src="libs/react-dom.production.min.js"></script>
+    <script src="libs/babel.min.js"></script>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root {
+          --bg-color: #f8f9fa;
+          --panel-bg: #ffffff;
+          --card-bg: #ffffff;
+          --accent-color: #2d6a4f;
+          --accent-light: #e9f5ee;
+          --accent-gradient: linear-gradient(135deg, #2d6a4f 0%, #40916c 100%);
+          --text-primary: #212529;
+          --text-secondary: #6c757d;
+          --border-color: #dee2e6;
+          --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+          --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.08);
+          --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          --color-success: #2d6a4f;
+          --color-danger: #ae2012;
+        }
+
+        * {
+          box-sizing: border-box;
+          margin: 0;
+          padding: 0;
+        }
+
+        body {
+          background-color: var(--bg-color);
+          color: var(--text-primary);
+          font-family: var(--font-main);
+          -webkit-font-smoothing: antialiased;
+          min-height: 100vh;
+          padding-bottom: 60px;
+        }
+
+        #root {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 40px 20px;
+          width: 100%;
+        }
+
+        .container {
+          max-width: 1100px;
+          width: 100%;
+        }
+
+        header {
+          margin-bottom: 40px;
+          text-align: left;
+        }
+
+        h1 {
+          font-size: 2.2rem;
+          font-weight: 800;
+          margin-bottom: 8px;
+          color: var(--accent-color);
+          letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+          color: var(--text-secondary);
+          font-size: 1rem;
+        }
+
+        .settings-panel {
+          background: var(--panel-bg);
+          border: 1px solid var(--border-color);
+          border-radius: 14px;
+          padding: 12px 24px 18px 24px;
+          margin-bottom: 40px;
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 8px 32px;
+          box-shadow: var(--shadow-sm);
+          position: sticky;
+          top: 10px;
+          z-index: 100;
+          backdrop-filter: blur(10px);
+        }
+
+        .input-group {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          align-items: center;
+        }
+
+        label {
+          font-size: 0.68rem;
+          font-weight: 700;
+          color: var(--text-secondary);
+          text-transform: uppercase;
+          letter-spacing: 0.4px;
+          white-space: nowrap;
+        }
+
+        input {
+          background: white;
+          border: 1px solid var(--border-color);
+          border-radius: 8px;
+          padding: 8px 12px;
+          color: var(--text-primary);
+          font-size: 0.95rem;
+          font-weight: 600;
+          transition: all 0.2s ease;
+          width: 140px;
+          text-align: center;
+        }
+
+        .input-group.relative {
+          position: relative;
+        }
+
+        .calendar-popup {
+          position: absolute;
+          top: calc(100% + 10px);
+          left: 50%;
+          transform: translateX(-50%);
+          background: white;
+          border: 1px solid var(--border-color);
+          border-radius: 16px;
+          padding: 20px;
+          box-shadow: var(--shadow-lg);
+          z-index: 1000;
+          width: 300px;
+          animation: slideIn 0.2s ease forwards;
+        }
+
+        .calendar-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 15px;
+        }
+
+        .calendar-header span {
+          font-weight: 700;
+          color: var(--accent-color);
+          font-size: 1rem;
+        }
+
+        .calendar-header button {
+          background: var(--accent-light);
+          border: none;
+          width: 30px;
+          height: 30px;
+          border-radius: 8px;
+          cursor: pointer;
+          color: var(--accent-color);
+          font-weight: bold;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+        }
+
+        .calendar-header button:hover {
+          background: var(--accent-color);
+          color: white;
+        }
+
+        .calendar-weekdays {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 5px;
+          margin-bottom: 10px;
+        }
+
+        .calendar-weekdays div {
+          text-align: center;
+          font-size: 0.75rem;
+          font-weight: 800;
+          color: var(--text-secondary);
+          text-transform: uppercase;
+        }
+
+        .calendar-days {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 5px;
+        }
+
+        .calendar-day {
+          height: 35px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          border-radius: 8px;
+          font-size: 0.9rem;
+          font-weight: 500;
+          transition: all 0.2s;
+        }
+
+        .calendar-day:not(.empty):hover {
+          background: var(--accent-light);
+          color: var(--accent-color);
+        }
+
+        .calendar-day.selected {
+          background: var(--accent-gradient);
+          color: white !important;
+          font-weight: 700;
+        }
+
+        .calendar-day.empty {
+          cursor: default;
+        }
+
+        .read-only-value {
+          background: #f8f9fa;
+          border: 1px solid var(--border-color);
+          border-radius: 8px;
+          padding: 8px 12px;
+          color: var(--text-primary);
+          font-size: 0.95rem;
+          font-weight: 600;
+          width: 140px;
+          text-align: center;
+        }
+
+        input:focus {
+          outline: none;
+          border-color: var(--accent-color);
+          box-shadow: 0 0 0 4px rgba(45, 106, 79, 0.1);
+        }
+
+        .input-highlight {
+          font-size: 1.1rem !important;
+          font-weight: 850 !important;
+          color: var(--accent-color) !important;
+          background: var(--accent-light) !important;
+          border-color: var(--accent-color) !important;
+          width: 140px !important;
+          text-align: center;
+          box-shadow: 0 0 0 2px rgba(45, 106, 79, 0.1);
+        }
+
+        .inline-input {
+          background: none;
+          border: 1px solid transparent;
+          border-radius: 6px;
+          padding: 6px 4px;
+          font-weight: 700;
+          font-size: 1rem;
+          width: 60px;
+          transition: all 0.2s;
+          color: var(--text-primary);
+          text-align: right;
+        }
+
+        .inline-input:hover {
+          background: #f1f3f5;
+          border-color: var(--border-color);
+        }
+
+        .inline-input:focus {
+          background: white;
+          border-color: var(--accent-color);
+          box-shadow: none;
+          width: 70px;
+        }
+
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.4);
+          backdrop-filter: blur(4px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          animation: fadeIn 0.2s ease;
+        }
+
+        .modal-content {
+          background: white;
+          padding: 30px;
+          border-radius: 24px;
+          width: 100%;
+          max-width: 450px;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+          animation: scaleIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .modal-content h2 {
+          margin-bottom: 20px;
+          font-size: 1.5rem;
+          color: var(--accent-color);
+        }
+
+        .import-btn {
+          background: var(--accent-light);
+          color: var(--accent-color);
+          border: 1px dashed var(--accent-color);
+          padding: 6px 14px;
+          border-radius: 8px;
+          font-size: 0.82rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s;
+          white-space: nowrap;
+        }
+.import-btn.synced {
+  background: var(--accent-color);
+  color: white;
+  border-style: solid;
+}
+
+        .import-btn:hover {
+          background: var(--accent-color);
+          color: white;
+        }
+
+        .manual-price-wrapper {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+          background: #f8f9fa;
+          border: 1px dashed var(--border-color);
+          border-radius: 20px;
+          padding: 4px 12px;
+          transition: all 0.2s;
+        }
+        .manual-price-wrapper:focus-within {
+          border-color: var(--accent-color);
+          background: white;
+          box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.1);
+        }
+        .manual-price-wrapper input {
+          background: transparent;
+          border: none;
+          width: 45px;
+          padding: 0;
+          text-align: center;
+          font-weight: 700;
+          color: var(--text-color);
+          outline: none;
+        }
+        .manual-price-wrapper .manual-icon {
+          font-size: 0.75rem;
+          color: var(--text-secondary);
+        }
+
+        .paste-area {
+          display: flex;
+          flex-direction: column;
+          gap: 15px;
+          width: 100%;
+        }
+
+        .paste-area textarea {
+          background: #f8f9fa;
+          border: 1px solid var(--border-color);
+          border-radius: 12px;
+          padding: 15px;
+          font-family: inherit;
+          font-size: 1rem;
+          height: 150px;
+          resize: none;
+          width: 100%;
+        }
+
+        .paste-area textarea:focus {
+          outline: none;
+          border-color: var(--accent-color);
+        }
+
+        .paste-actions {
+          display: flex;
+          gap: 12px;
+          margin-top: 5px;
+        }
+
+        .confirm-btn {
+          background: var(--accent-color);
+          color: white;
+          border: none;
+          padding: 14px;
+          border-radius: 12px;
+          font-weight: 700;
+          cursor: pointer;
+          flex: 2;
+          transition: transform 0.1s;
+        }
+
+        .confirm-btn:active {
+          transform: scale(0.98);
+        }
+
+        .cancel-btn {
+          background: #f1f3f5;
+          color: var(--text-secondary);
+          border: none;
+          padding: 14px;
+          border-radius: 12px;
+          font-weight: 700;
+          cursor: pointer;
+          flex: 1;
+        }
+
+        .ingredients-list {
+          background: var(--panel-bg);
+          border: 1px solid var(--border-color);
+          border-radius: 20px;
+          overflow: hidden;
+          box-shadow: var(--shadow-lg);
+        }
+
+        .list-header {
+          display: grid;
+          grid-template-columns: repeat(6, 1fr);
+          padding: 20px 30px;
+          background: #f8f9fa;
+          border-bottom: 1px solid var(--border-color);
+          text-align: center;
+        }
+
+        .header-label {
+          font-size: 0.7rem;
+          font-weight: 800;
+          color: var(--text-secondary);
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+
+        .ingredient-row-container {
+          border-bottom: 1px solid #f1f3f5;
+          transition: all 0.3s ease, opacity 0.3s ease;
+        }
+
+        .ingredients-list.has-expanded .ingredient-row-container:not(.expanded) {
+          opacity: 0.35;
+        }
+
+        .ingredients-list.has-expanded .ingredient-row-container:not(.expanded):hover {
+          opacity: 0.7;
+        }
+
+        .ingredient-row-container:last-child {
+          border-bottom: none;
+        }
+
+        .ingredient-row-container.expanded {
+          background: #fafbfc;
+        }
+
+        .ingredient-row {
+          display: grid;
+          grid-template-columns: repeat(6, 1fr);
+          padding: 15px 30px;
+          align-items: center;
+          transition: background 0.2s ease;
+          text-align: center;
+          position: relative;
+          cursor: pointer;
+        }
+
+        .ingredient-row:hover {
+          background: #fafbfc;
+        }
+
+        .ingredient-row:hover .name-cell h3, .ingredient-row:hover .expand-icon {
+          color: var(--accent-color);
+        }
+
+        .expand-icon {
+          position: absolute;
+          right: 25px;
+          font-size: 0.8rem;
+          color: var(--text-secondary);
+          transition: all 0.2s;
+        }
+
+        .name-cell h3 {
+          font-size: 1.1rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          text-align: center;
+          margin: 0;
+          transition: color 0.2s;
+        }
+
+        .name-cell, .price-pill-cell, .ideal-price-cell, .stock-cell, .duration-cell, .buy-cell {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .ideal-price-cell {
+          gap: 2px;
+        }
+
+        .ideal-price-cell .inline-input {
+          text-align: center;
+        }
+
+        .stock-input {
+          font-size: 1.2rem;
+          font-weight: 800;
+          width: 70px;
+        }
+
+        .stock-input:focus {
+          width: 80px;
+        }
+
+        .stock-cell {
+          gap: 2px;
+        }
+
+        .buy-cell {
+          gap: 4px;
+        }
+
+        .price-pill {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 8px 16px;
+          border-radius: 50px;
+          font-weight: 700;
+          font-size: 0.9rem;
+          text-decoration: none;
+          cursor: pointer;
+          transition: transform 0.2s, opacity 0.2s;
+          min-width: 100px;
+        }
+
+        .price-pill:hover {
+          transform: scale(1.05);
+          opacity: 0.95;
+        }
+
+        .price-pill.good {
+          background: var(--accent-light);
+          color: var(--color-success);
+          border: 1px solid rgba(45, 106, 79, 0.2);
+        }
+
+        .price-pill.bad {
+          background: #fff0f0;
+          color: var(--color-danger);
+          border: 1px solid rgba(174, 32, 18, 0.2);
+        }
+
+        .price-pill.neutral {
+          background: #f1f3f5;
+          color: var(--text-secondary);
+          cursor: default;
+        }
+
+        .multi-prices {
+          flex-direction: column;
+          gap: 8px;
+          padding: 10px 0;
+        }
+
+        .price-pill .store-tag {
+          position: absolute;
+          top: -10px;
+          left: 50%;
+          transform: translateX(-50%);
+          font-size: 0.65rem;
+          background: #495057;
+          color: white;
+          padding: 2px 8px;
+          border-radius: 4px;
+          opacity: 0;
+          transition: opacity 0.2s, top 0.2s;
+          white-space: nowrap;
+          pointer-events: none;
+          z-index: 10;
+        }
+
+        .price-pill:hover .store-tag {
+          opacity: 1;
+          top: -18px;
+        }
+
+        .multi-prices .store-tag {
+          position: static;
+          transform: none;
+          opacity: 1;
+          background: transparent;
+          color: inherit;
+          font-size: 0.6rem;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: -2px;
+          display: block;
+        }
+
+        .multi-prices .price-pill {
+          flex-direction: column;
+          padding: 6px 12px;
+          min-width: 120px;
+        }
+
+        .unit-label {
+          font-size: 0.8rem;
+          color: var(--text-secondary);
+        }
+
+        .duration-cell {
+          font-size: 0.9rem;
+        }
+
+        .depletion-info {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          align-items: center;
+        }
+
+        .depletion-date {
+          color: var(--text-primary);
+          font-weight: 800;
+          font-size: 1rem;
+        }
+
+        .depletion-days {
+          font-size: 0.7rem;
+          color: var(--text-secondary);
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .buy-cell {
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .buy-amount-wrapper {
+          display: flex;
+          align-items: baseline;
+          justify-content: center;
+          gap: 4px;
+        }
+
+        .buy-cell .buy-value {
+          font-size: 1.2rem;
+          font-weight: 800;
+          color: var(--accent-color);
+        }
+
+        .estimated-cost {
+          font-size: 0.65rem;
+          color: var(--text-secondary);
+          font-weight: 500;
+          opacity: 0.7;
+        }
+
+        .expanded-details {
+          padding: 20px 30px;
+          background: #f8f9fa;
+          border-top: 1px dashed var(--border-color);
+          display: flex;
+          gap: 30px;
+          align-items: center;
+          justify-content: center;
+          animation: slideDown 0.3s ease forwards;
+          overflow: hidden;
+        }
+
+        .detail-group {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          align-items: center;
+        }
+
+        .detail-label {
+          color: var(--text-secondary);
+          text-transform: uppercase;
+          font-weight: 700;
+          font-size: 0.7rem;
+        }
+
+        .detail-value {
+          color: var(--text-primary);
+          font-weight: 700;
+        }
+
+        .detail-divider {
+          width: 1px;
+          height: 30px;
+          background: var(--border-color);
+        }
+
+        .detail-group.highlight .detail-value {
+          color: var(--accent-color);
+        }
+
+        .footer {
+          margin-top: 40px;
+          text-align: center;
+          color: var(--text-secondary);
+          font-size: 0.85rem;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideDown { from { max-height: 0; opacity: 0; } to { max-height: 300px; opacity: 1; } }
+
+        @media (max-width: 900px) {
+          .list-header { display: none; }
+          .ingredient-row { grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; }
+          .buy-cell { grid-column: span 2; background: var(--accent-light); padding: 15px; border-radius: 12px; text-align: center; }
+        }
+
+        .financial-summary-panel {
+          background: white;
+          border-radius: 20px;
+          box-shadow: var(--shadow-sm);
+          padding: 30px;
+          margin-top: 30px;
+        }
+
+        .summary-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 25px;
+          padding-bottom: 15px;
+          border-bottom: 1px solid var(--border-color);
+        }
+
+        .summary-header h2 {
+          font-size: 1.3rem;
+          color: var(--text-color);
+          margin: 0;
+        }
+
+        .toggle-wrapper {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          cursor: pointer;
+          user-select: none;
+        }
+
+        .toggle-label {
+          font-size: 0.95rem;
+          color: var(--text-secondary);
+          font-weight: 500;
+          transition: color 0.2s;
+        }
+        .toggle-label.active {
+          color: var(--accent-color);
+          font-weight: 600;
+        }
+
+        .toggle-switch {
+          width: 50px;
+          height: 26px;
+          background-color: var(--color-danger);
+          border-radius: 30px;
+          position: relative;
+          transition: all 0.3s;
+        }
+        .toggle-switch.on { background-color: var(--color-success); }
+
+        .toggle-knob {
+          width: 20px;
+          height: 20px;
+          background-color: white;
+          border-radius: 50%;
+          position: absolute;
+          top: 3px;
+          left: 3px;
+          transition: all 0.3s ease;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .toggle-switch.on .toggle-knob { left: 27px; }
+
+        .summary-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 20px;
+        }
+
+        .summary-item {
+          background: #f8f9fa;
+          border-radius: 10px;
+          padding: 15px;
+          border: 1px solid rgba(0,0,0,0.05);
+          transition: all 0.3s ease;
+        }
+
+        .summary-item.excluded {
+          opacity: 0.45;
+          background: #fff;
+          border: 1px dashed var(--border-color);
+        }
+        .summary-item.excluded .value { text-decoration: line-through; opacity: 0.5; }
+
+        .summary-item .item-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 12px;
+          padding-bottom: 8px;
+          border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .summary-item .item-header h4 { margin: 0; font-size: 1.05rem; }
+
+        .summary-checkbox { width: 18px; height: 18px; cursor: pointer; accent-color: var(--color-success); }
+
+        .value-stack { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+
+        .value-stack .qty { font-size: 0.72rem; font-weight: 500; color: var(--text-secondary); }
+
+        .summary-item.total-comparison {
+          grid-column: 1 / -1;
+          background: white;
+          border: 1px solid var(--border-color);
+          box-shadow: var(--shadow-sm);
+          padding: 15px 25px;
+          border-radius: 20px;
+        }
+
+        .section-header-compact {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 12px;
+          padding-bottom: 8px;
+          border-bottom: 1px solid var(--border-color);
+        }
+
+        .section-header-compact h2 {
+          font-size: 1.1rem;
+          color: var(--accent-color);
+          margin: 0;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .comparison-grid { display: flex; flex-direction: column; max-width: 600px; margin: 0 auto; }
+
+        .comparison-header, .comparison-row { display: grid; grid-template-columns: 1.5fr 1fr 1fr; align-items: center; }
+
+        .comparison-header { padding-bottom: 8px; }
+
+        .comparison-header span { font-weight: 800; font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; text-align: center; }
+        .comparison-header span:first-child { text-align: left; }
+        .comparison-header span.active { color: var(--accent-color); }
+
+        .comparison-row { padding: 10px 0; border-top: 1px solid rgba(0, 0, 0, 0.04); }
+        .comparison-row .period { font-weight: 700; font-size: 0.95rem; color: var(--text-primary); }
+        .comparison-row .value { text-align: center; font-size: 1rem; font-weight: 500; color: var(--text-secondary); opacity: 0.6; }
+        .comparison-row .value.highlight, .comparison-row .value.highlight-secondary { opacity: 1; font-weight: 800; color: var(--accent-color); }
+        .comparison-row .value.highlight { font-size: 1.15rem; color: var(--color-success); }
+
+        .total-footnote { margin: 12px 0 0 0; font-size: 0.78rem; color: var(--text-secondary); font-style: italic; opacity: 0.75; text-align: center; border-top: 1px solid rgba(0,0,0,0.06); padding-top: 10px; }
+
+        .cost-row { display: flex; justify-content: space-between; align-items: center; }
+        .cost-row .period { font-size: 0.85rem; color: var(--text-secondary); }
+        .cost-row .value { font-weight: 600; }
+        .cost-row .value.highlight { font-size: 1.15rem; color: var(--accent-color); font-weight: 800; }
+        .cost-row .value.highlight-secondary { color: var(--accent-color); font-weight: 700; }
+
+        /* ── Login Screen ── */
+        .login-screen {
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          min-height: 100vh; background: var(--bg-color); font-family: 'Inter', sans-serif;
+          animation: fadeIn 0.6s ease;
+        }
+        .login-card {
+          background: white; border-radius: 24px; padding: 50px 40px;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.08); text-align: center;
+          max-width: 380px; width: 90%;
+        }
+        .login-card h1 { font-size: 1.5rem; color: var(--text-primary); margin: 0 0 8px 0; }
+        .login-card p { color: var(--text-secondary); font-size: 0.9rem; margin: 0 0 30px 0; }
+        .login-card .emoji { font-size: 3rem; margin-bottom: 20px; display: block; }
+        .google-btn {
+          display: flex; align-items: center; justify-content: center; gap: 10px;
+          width: 100%; padding: 14px 20px; border-radius: 12px;
+          border: 1px solid var(--border-color); background: white;
+          font-size: 1rem; font-weight: 600; color: var(--text-primary);
+          cursor: pointer; transition: all 0.2s;
+          font-family: 'Inter', sans-serif;
+        }
+        .google-btn:hover { background: #f8f9fa; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .google-btn img { width: 20px; height: 20px; }
+        .login-error {
+          margin-top: 16px; padding: 10px 16px; border-radius: 8px;
+          background: #fef2f2; color: #dc2626; font-size: 0.85rem;
+        }
+        .login-loading {
+          color: var(--text-secondary); font-size: 0.9rem;
+          display: flex; align-items: center; gap: 8px;
+        }
+        .user-bar {
+          display: flex; align-items: center; gap: 10px;
+        }
+        .user-avatar {
+          width: 28px; height: 28px; border-radius: 50%;
+          border: 2px solid var(--accent-color);
+        }
+        .user-name {
+          font-size: 0.82rem; font-weight: 600; color: var(--text-secondary);
+        }
+        .logout-btn {
+          background: none; border: 1px solid var(--border-color);
+          padding: 4px 12px; border-radius: 8px; font-size: 0.75rem;
+          color: var(--text-secondary); cursor: pointer; transition: all 0.2s;
+          font-family: 'Inter', sans-serif;
+        }
+        .logout-btn:hover { background: #fef2f2; color: #dc2626; border-color: #dc2626; }
+        .sync-dot {
+          display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+          margin-right: 6px; vertical-align: middle;
+        }
+        .sync-dot.ok { background: var(--color-success); }
+        .sync-dot.saving { background: #f59e0b; animation: pulse-warn 1s infinite; }
+        .sync-dot.error { background: var(--color-danger); }
+        @keyframes pulse-warn {
+          0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root">
+        <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; color: #666;">
+            Carregando sistema...
+        </div>
+    </div>
+
+    <script type="text/babel" data-presets="react">
+        const { useState, useEffect, useRef, useCallback } = React;
+
+        // ══════════════════════════════════════════════════════════════
+        // FIREBASE CONFIG — cole aqui a configuração do seu projeto
+        // ══════════════════════════════════════════════════════════════
+        const FIREBASE_CONFIG = {
+          apiKey: "AIzaSyDckDAsY-XP04aVFOasODHd-CVGgATJtA4",
+          authDomain: "bolo-de-bolo-estoque.firebaseapp.com",
+          projectId: "bolo-de-bolo-estoque",
+          storageBucket: "bolo-de-bolo-estoque.appspot.com",
+          messagingSenderId: "792814599984",
+          appId: "1:792814599984:web:44fecc1ab43af54349d2f5"
+        };
+
+        const ALLOWED_EMAILS = [
+          'felipedavolta@gmail.com',
+          'bolodebolomf@gmail.com'
+        ];
+
+        const firebaseConfigIsSet = FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.authDomain && FIREBASE_CONFIG.projectId && FIREBASE_CONFIG.appId;
+        if (!firebaseConfigIsSet) {
+          document.getElementById('root').innerHTML = `
+            <div class="login-screen">
+              <div class="login-card">
+                <h1>Firebase não configurado</h1>
+                <p>Abra o Firebase Console, crie um app web e cole o objeto FIREBASE_CONFIG em <strong>index.html</strong>.</p>
+                <p>Habilite login com Google e adicione o domínio do site em Authentication &gt; Authorized domains.</p>
+              </div>
+            </div>`;
+          throw new Error('Firebase configuration missing.');
+        }
+
+        // ── Inicializa Firebase ──
+        const app = firebase.initializeApp(FIREBASE_CONFIG);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const dataDocRef = db.collection('estoque').doc('dados');
+
+        // ── Ingredientes padrão ──
+        const DEFAULT_INGREDIENTS = [
+          { id: 'sugar', name: 'Açúcar', unit: 'kg', perBatch: 3, currentStock: 0, price: 5.39, idealPrice: 4.00, link: 'https://www.megaboxatacado.com.br/acucar-refinado-uniao-pacote-1-kg/14489/p' },
+          { id: 'flour', name: 'Farinha', unit: 'kg', perBatch: 2, currentStock: 0, price: 6.99, idealPrice: 5.00, link: 'https://www.megaboxatacado.com.br/farinha-trigo-dona-benta-1/10528/p' },
+          { id: 'oil', name: 'Óleo', unit: 'un', perBatch: 1.5, currentStock: 0, price: 7.69, idealPrice: 7.00, link: 'https://www.megaboxatacado.com.br/oleo-soja-soya--900/10235/p' },
+          { id: 'yeast', name: 'Fermento', unit: 'un', perBatch: 1, currentStock: 0, price: null, idealPrice: 3.00, link: null }
+        ];
+
+        const mergeIngredients = (defaults, saved) => {
+          if (!saved) return defaults.map(d => ({ ...d, idealPrice: parseFloat(d.idealPrice).toFixed(2) }));
+          return defaults.map(def => {
+            const found = saved.find(p => p.id === def.id);
+            if (found) return { ...def, ...found, idealPrice: parseFloat(found.idealPrice !== undefined ? found.idealPrice : def.idealPrice).toFixed(2) };
+            return { ...def, idealPrice: parseFloat(def.idealPrice).toFixed(2) };
+          });
+        };
+
+        // ══════════════════════════════════════════════════════════════
+        // LOGIN SCREEN
+        // ══════════════════════════════════════════════════════════════
+        function LoginScreen() {
+          const [loading, setLoading] = useState(false);
+          const [error, setError] = useState(null);
+
+          const handleLogin = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+              const provider = new firebase.auth.GoogleAuthProvider();
+              const result = await auth.signInWithPopup(provider);
+              const email = result.user.email.toLowerCase();
+              if (!ALLOWED_EMAILS.includes(email)) {
+                await auth.signOut();
+                setError('Acesso negado. Seu email não está autorizado.');
+              }
+            } catch (err) {
+              if (err.code !== 'auth/popup-closed-by-user') {
+                setError('Erro ao fazer login. Tente novamente.');
+              }
+            }
+            setLoading(false);
+          };
+
+          return (
+            <div className="login-screen">
+              <div className="login-card">
+                <span className="emoji">🧁</span>
+                <h1>Gestão de Estoque</h1>
+                <p>Faça login para acessar o sistema</p>
+                {loading ? (
+                  <div className="login-loading">Entrando...</div>
+                ) : (
+                  <button className="google-btn" onClick={handleLogin}>
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" />
+                    Entrar com Google
+                  </button>
+                )}
+                {error && <div className="login-error">{error}</div>}
+              </div>
+            </div>
+          );
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        // APP PRINCIPAL
+        // ══════════════════════════════════════════════════════════════
+        function App({ user }) {
+
+          const [salesPerDay, setSalesPerDay] = useState(150)
+          const [targetDate, setTargetDate] = useState(() => {
+            const d = new Date(); d.setDate(d.getDate() + 7);
+            return d.toISOString().split('T')[0];
+          })
+          const [ingredients, setIngredients] = useState(() => mergeIngredients(DEFAULT_INGREDIENTS, null))
+
+          const [syncStatus, setSyncStatus] = useState('loading'); // 'loading' | 'ok' | 'saving' | 'error'
+          const initialLoadDone = useRef(false);
+          const saveTimerRef = useRef(null);
+
+          // ── Firestore: escuta em tempo real ──
+          useEffect(() => {
+            const unsubscribe = dataDocRef.onSnapshot(
+              (doc) => {
+                if (doc.exists) {
+                  const data = doc.data();
+                  if (data.ingredients) setIngredients(mergeIngredients(DEFAULT_INGREDIENTS, data.ingredients));
+                  if (data.salesPerDay !== undefined) setSalesPerDay(data.salesPerDay);
+                  if (data.targetDate) setTargetDate(data.targetDate);
+                }
+                initialLoadDone.current = true;
+                setSyncStatus('ok');
+              },
+              (err) => {
+                console.error('Firestore listen error:', err);
+                setSyncStatus('error');
+                initialLoadDone.current = true;
+              }
+            );
+            return () => unsubscribe();
+          }, []);
+
+          // ── Firestore: salva com debounce de 800ms ──
+          const saveToFirestore = useCallback((data) => {
+            if (!initialLoadDone.current) return;
+            setSyncStatus('saving');
+            clearTimeout(saveTimerRef.current);
+            saveTimerRef.current = setTimeout(() => {
+              dataDocRef.set(data, { merge: true })
+                .then(() => setSyncStatus('ok'))
+                .catch((err) => { console.error('Save error:', err); setSyncStatus('error'); });
+            }, 800);
+          }, []);
+
+          useEffect(() => {
+            if (!initialLoadDone.current) return;
+            saveToFirestore({ ingredients, salesPerDay, targetDate });
+          }, [salesPerDay, targetDate, ingredients, saveToFirestore]);
+
+          // ── Exportar / Importar JSON (backup) ──
+
+          const handleExportJSON = () => {
+            const data = { ingredients, salesPerDay, targetDate };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'dados_estoque.json'; a.click();
+            URL.revokeObjectURL(url);
+          };
+
+          const fileInputRef = useRef(null);
+
+          const handleImportJSON = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+              try {
+                const data = JSON.parse(evt.target.result);
+                if (data.ingredients) setIngredients(mergeIngredients(DEFAULT_INGREDIENTS, data.ingredients));
+                if (data.salesPerDay !== undefined) setSalesPerDay(data.salesPerDay);
+                if (data.targetDate) setTargetDate(data.targetDate);
+                alert('Dados importados com sucesso!');
+              } catch (err) { alert('Arquivo inválido.'); }
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+          };
+
+          const handleLogout = () => auth.signOut();
+
+          const [pasteMode, setPasteMode] = useState(false);
+          const [pasteData, setPasteData] = useState('');
+          const [expandedRow, setExpandedRow] = useState(null);
+          const [useIdealPrice, setUseIdealPrice] = useState(false);
+          const [summaryExcluded, setSummaryExcluded] = useState({});
+          const [showCalendar, setShowCalendar] = useState(false);
+          const [calendarViewDate, setCalendarViewDate] = useState(new Date());
+
+          const handleToggleSummaryItem = (id) => {
+            setSummaryExcluded(prev => ({ ...prev, [id]: !prev[id] }));
+          };
+
+          useEffect(() => {
+            const handleClickOutside = (event) => {
+              const isRowClick = event.target.closest('.ingredient-row-container');
+              if (!isRowClick && expandedRow !== null) {
+                setExpandedRow(null);
+              }
+              
+              const isCalendarTrigger = event.target.closest('.date-trigger') || event.target.closest('.calendar-popup');
+              if (!isCalendarTrigger) {
+                setShowCalendar(false);
+              }
+            };
+            
+            document.addEventListener('click', handleClickOutside);
+            return () => document.removeEventListener('click', handleClickOutside);
+          }, [expandedRow]);
+
+          const calculateToBuy = (ingredient) => {
+            const today = new Date()
+            today.setHours(0, 0, 0, 0)
+            const target = new Date(targetDate)
+            
+            if (isNaN(target.getTime())) return "0.00"
+
+            const diffTime = Math.max(0, target - today)
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+            
+            const totalCakes = diffDays * salesPerDay
+            const totalBatches = totalCakes / 12
+            const totalRequired = totalBatches * ingredient.perBatch
+            
+            return Math.max(0, totalRequired - ingredient.currentStock).toFixed(0)
+          }
+
+          const calculateDepletionInfo = (ingredient) => {
+            if (!salesPerDay || salesPerDay <= 0) return { date: "--", days: null };
+            if (!ingredient.currentStock || ingredient.currentStock <= 0) return { date: "Sem estoque", days: 0 };
+            
+            const batchesPerDay = salesPerDay / 12;
+            const dailyConsumption = batchesPerDay * ingredient.perBatch;
+            
+            if (dailyConsumption === 0) return { date: "--", days: null };
+
+            const daysLeft = Math.floor(ingredient.currentStock / dailyConsumption);
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const depletionDate = new Date(today);
+            depletionDate.setDate(depletionDate.getDate() + daysLeft);
+            
+            return { 
+              date: depletionDate.toLocaleDateString('pt-BR'), 
+              days: daysLeft 
+            };
+          };
+
+          const handleUpdate = (id, field, value) => {
+            setIngredients(prev => prev.map(item => 
+              item.id === id ? { ...item, [field]: field === 'idealPrice' ? value : (parseFloat(value) || 0) } : item
+            ))
+          }
+
+          const handleImportPaste = () => {
+            const numbers = pasteData.split(/\s+/).map(n => n.replace(',', '.')).filter(n => n !== '' && !isNaN(parseFloat(n)));
+            
+            if (numbers.length < 4) {
+              alert("Por favor, cole os 4 valores em ordem (açúcar, farinha, óleo, fermento)");
+              return;
+            }
+
+            setIngredients(prev => prev.map((item, idx) => {
+              if (idx < 4) {
+                return { ...item, currentStock: parseFloat(numbers[idx]) };
+              }
+              return item;
+            }));
+            
+            setPasteMode(false);
+            setPasteData('');
+          }
+
+          const handleDateChange = (value) => {
+            if (!value) return; 
+            const [year, month, day] = value.split('-').map(Number);
+            const dateObj = new Date(year, month - 1, day);
+            if (dateObj.getFullYear() !== year || dateObj.getMonth() !== month - 1 || dateObj.getDate() !== day) {
+              return;
+            }
+            setTargetDate(value);
+            setShowCalendar(false);
+          }
+
+          const Calendar = () => {
+            const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+            const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+            const firstDayOfMonth = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth(), 1);
+            const lastDayOfMonth = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + 1, 0);
+            const startDate = firstDayOfMonth.getDay();
+            const totalDays = lastDayOfMonth.getDate();
+
+            const currentYear = calendarViewDate.getFullYear();
+            const currentMonth = calendarViewDate.getMonth();
+
+            const handlePrevMonth = (e) => {
+              e.stopPropagation();
+              setCalendarViewDate(new Date(currentYear, currentMonth - 1, 1));
+            };
+
+            const handleNextMonth = (e) => {
+              e.stopPropagation();
+              setCalendarViewDate(new Date(currentYear, currentMonth + 1, 1));
+            };
+
+            const isSelected = (day) => {
+              const d = new Date(currentYear, currentMonth, day).toISOString().split('T')[0];
+              return d === targetDate;
+            };
+
+            const calendarGrid = [];
+            for (let i = 0; i < startDate; i++) calendarGrid.push(<div key={`empty-${i}`} className="calendar-day empty"></div>);
+            for (let d = 1; d <= totalDays; d++) {
+              calendarGrid.push(
+                <div 
+                  key={d} 
+                  className={`calendar-day ${isSelected(d) ? 'selected' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    handleDateChange(dateStr);
+                  }}
+                >
+                  {d}
+                </div>
+              );
+            }
+
+            return (
+              <div className="calendar-popup" onClick={(e) => e.stopPropagation()}>
+                <div className="calendar-header">
+                  <button onClick={handlePrevMonth}>&lt;</button>
+                  <span>{months[currentMonth]} {currentYear}</span>
+                  <button onClick={handleNextMonth}>&gt;</button>
+                </div>
+                <div className="calendar-weekdays">
+                  {days.map(d => <div key={d}>{d}</div>)}
+                </div>
+                <div className="calendar-days">
+                  {calendarGrid}
+                </div>
+              </div>
+            );
+          };
+
+          const financialSummary = ingredients.map(item => {
+            const priceToUse = useIdealPrice ? (parseFloat(item.idealPrice) || 0) : (item.price || 0);
+            const validPrice = priceToUse > 0;
+            
+            const batchesPerDay = salesPerDay / 12;
+            const usagePerDay = batchesPerDay * item.perBatch;
+            const usageWeek = usagePerDay * 6;
+            const usageMonth = usagePerDay * 26;
+            
+            const costCake = validPrice ? (item.perBatch / 12) * priceToUse : 0;
+            const costWeek = validPrice ? usageWeek * priceToUse : 0;
+            const costMonth = validPrice ? usageMonth * priceToUse : 0;
+            
+            const isIncluded = !summaryExcluded[item.id];
+            
+            return { 
+              id: item.id, 
+              name: item.name, 
+              unit: item.unit,
+              usageCake: item.perBatch / 12,
+              usageWeek,
+              usageMonth,
+              costCake,
+              costWeek, 
+              costMonth, 
+              validPrice,
+              isIncluded
+            };
+          });
+
+          const getTotals = (mode) => {
+            return financialSummary.reduce((acc, item) => {
+              if (!item.isIncluded) return acc;
+              const ingredient = ingredients.find(i => i.id === item.id);
+              const actualPrice = ingredient.price != null ? ingredient.price : (parseFloat(ingredient.idealPrice) || 0);
+              const priceToUse = mode === 'ideal' ? (parseFloat(ingredient.idealPrice) || 0) : actualPrice;
+              const validPrice = priceToUse > 0;
+              
+              const batchesPerDay = salesPerDay / 12;
+              const usagePerDay = batchesPerDay * ingredient.perBatch;
+              
+              acc.cake += validPrice ? (ingredient.perBatch / 12) * priceToUse : 0;
+              acc.week += validPrice ? (usagePerDay * 6) * priceToUse : 0;
+              acc.month += validPrice ? (usagePerDay * 26) * priceToUse : 0;
+              return acc;
+            }, { cake: 0, week: 0, month: 0 });
+          };
+
+          const actualTotals = getTotals('actual');
+          const idealTotals = getTotals('ideal');
+          const yeastIncluded = !summaryExcluded['yeast'];
+          const yeastHasNoRealPrice = ingredients.find(i => i.id === 'yeast')?.price == null;
+          const showYeastNote = yeastIncluded && yeastHasNoRealPrice;
+
+          return (
+            <div className="container">
+              <header>
+                <h1>Gestão de Estoque • Bolos</h1>
+                <p className="subtitle">Planejamento e controle de insumos para produção</p>
+              </header>
+
+              <section className="settings-panel">
+                <div className="input-group">
+                  <label>Vendas por Dia (Méd.)</label>
+                  <input 
+                    type="number"
+                    className="input-highlight"
+                    value={salesPerDay} 
+                    onChange={(e) => setSalesPerDay(e.target.value)}
+                  />
+                </div>
+                <div className="input-group relative">
+                  <label>Data Limite (Previsão)</label>
+                  <div 
+                    className="read-only-value date-trigger" 
+                    onClick={() => {
+                      setShowCalendar(!showCalendar);
+                      setCalendarViewDate(new Date(targetDate));
+                    }}
+                    style={{ width: '140px', cursor: 'pointer' }}
+                  >
+                    {targetDate.split('-').reverse().join('/')}
+                  </div>
+                  {showCalendar && <Calendar />}
+                </div>
+
+                <div className="input-group">
+                  <label>Bolos / Semana (6d)</label>
+                  <div className="read-only-value">
+                    {parseInt(salesPerDay || 0) * 6}
+                  </div>
+                </div>
+
+                <div className="input-group">
+                  <label>Bolos / Mês (26d)</label>
+                  <div className="read-only-value">
+                    {parseInt(salesPerDay || 0) * 26}
+                  </div>
+                </div>
+                
+                <div className="input-group" style={{ marginLeft: 'auto', flexDirection: 'row', gap: '10px', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                    <span className={`sync-dot ${syncStatus}`}></span>
+                    {syncStatus === 'ok' ? 'Salvo' : syncStatus === 'saving' ? 'Salvando...' : syncStatus === 'error' ? 'Erro' : ''}
+                  </span>
+                  <input type="file" accept=".json" ref={fileInputRef} style={{ display: 'none' }} onChange={handleImportJSON} />
+                  <button className="import-btn" onClick={() => fileInputRef.current.click()} title="Importar dados de um arquivo JSON">
+                    ↑ Importar
+                  </button>
+                  <button className="import-btn" onClick={handleExportJSON} title="Baixar backup dos dados atuais">
+                    ↓ Exportar
+                  </button>
+                  <button className="import-btn" onClick={() => setPasteMode(true)}>
+                    Colar Estoque
+                  </button>
+                  <div className="user-bar">
+                    <img className="user-avatar" src={user.photoURL} alt="" />
+                    <button className="logout-btn" onClick={handleLogout}>Sair</button>
+                  </div>
+                </div>
+              </section>
+
+              {pasteMode && (
+                <div className="modal-overlay" onClick={() => setPasteMode(false)}>
+                  <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                    <h2>Importar Estoque</h2>
+                    <div className="paste-area">
+                      <label style={{ marginBottom: '-5px', fontSize: '0.7rem' }}>
+                        Copie 4 valores da planilha (Açúcar, Farinha, Óleo, Fermento)
+                      </label>
+                      <textarea 
+                        placeholder="Exemplo:&#10;190&#10;313&#10;166&#10;408" 
+                        autoFocus
+                        value={pasteData}
+                        onChange={(e) => setPasteData(e.target.value)}
+                      />
+                      <div className="paste-actions">
+                        <button className="cancel-btn" onClick={() => setPasteMode(false)}>Cancelar</button>
+                        <button className="confirm-btn" onClick={handleImportPaste}>Atualizar Estoque</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className={`ingredients-list ${expandedRow ? 'has-expanded' : ''}`}>
+                <div className="list-header">
+                  <div className="header-label">Ingrediente</div>
+                  <div className="header-label">Preço Atual</div>
+                  <div className="header-label">Preço Ideal</div>
+                  <div className="header-label">Estoque Atual</div>
+                  <div className="header-label">Duração Prevista</div>
+                  <div className="header-label">A Comprar</div>
+                </div>
+                
+                {ingredients.map((item) => {
+                  const isGoodPrice = item.price && item.price <= item.idealPrice;
+                  const showPrice = item.id !== 'yeast' && item.price !== null;
+                  const batchesPerDay = salesPerDay / 12;
+                  const usagePerDay = batchesPerDay * item.perBatch;
+                  const usagePerWeek = usagePerDay * 6;
+                  
+                  const buy1Week = Math.max(0, usagePerWeek - item.currentStock).toFixed(0);
+                  const buy2Weeks = Math.max(0, (usagePerWeek * 2) - item.currentStock).toFixed(0);
+                  const buy3Weeks = Math.max(0, (usagePerWeek * 3) - item.currentStock).toFixed(0);
+                  
+                  const isExpanded = expandedRow === item.id;
+                  const amountToBuyStr = calculateToBuy(item);
+                  const amountToBuyNum = parseFloat(amountToBuyStr);
+                  let estimatedCost = null;
+                  let costPerDay = null;
+                  let costPerWeek = null;
+                  if (item.price !== null) {
+                    if (amountToBuyNum > 0) estimatedCost = (amountToBuyNum * item.price).toFixed(2);
+                    if (usagePerDay > 0) costPerDay = (usagePerDay * item.price).toFixed(2);
+                    if (usagePerWeek > 0) costPerWeek = (usagePerWeek * item.price).toFixed(2);
+                  }
+
+                  return (
+                    <div key={item.id} className={`ingredient-row-container ${isExpanded ? 'expanded' : ''}`}>
+                      <div 
+                        className="ingredient-row"
+                        onClick={(e) => {
+                          if (e.target.tagName.toLowerCase() === 'input' || 
+                              e.target.tagName.toLowerCase() === 'a' || 
+                              e.target.closest('a')) {
+                            return;
+                          }
+                          setExpandedRow(isExpanded ? null : item.id);
+                        }}
+                      >
+                        <div className="name-cell"><h3>{item.name}</h3></div>
+                        <div className="price-pill-cell multi-prices">
+                          {item.id === 'yeast' ? (
+                             <div className="manual-price-wrapper">
+                               <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>R$</span>
+                               <input 
+                                 className="inline-input manual-input"
+                                 type="text" 
+                                 inputMode="decimal"
+                                 value={item.price !== null ? item.price : ''}
+                                 onChange={(e) => {
+                                   const rawValue = e.target.value.replace(/\D/g, '');
+                                   if (rawValue === '') { handleUpdate(item.id, 'price', null); return; }
+                                   const val = (parseFloat(rawValue) / 100).toFixed(2);
+                                   handleUpdate(item.id, 'price', val);
+                                 }}
+                                 placeholder="0.00"
+                               />
+                               <span className="manual-icon">✎</span>
+                             </div>
+                          ) : item.sources ? (
+                            item.sources.map((source, idx) => (
+                              <a 
+                                key={idx}
+                                href={source.link || '#'} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className={`price-pill ${source.price <= item.idealPrice ? 'good' : 'bad'}`}
+                                title={source.name}
+                              >
+                                <span className="store-tag">{source.name}</span>
+                                R$ {source.price.toFixed(2)}
+                              </a>
+                            ))
+                          ) : showPrice ? (
+                            <a href={item.link || '#'} target="_blank" rel="noopener noreferrer" className={`price-pill ${isGoodPrice ? 'good' : 'bad'}`}>
+                              R$ {parseFloat(item.price).toFixed(2)}
+                            </a>
+                          ) : <span className="price-pill neutral" style={{ opacity: 0.5 }}>--</span>}
+                        </div>
+                        <div className="ideal-price-cell">
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>R$</span>
+                          <input 
+                            className="inline-input ideal-input"
+                            type="text" 
+                            inputMode="decimal"
+                            value={item.idealPrice}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (/^\d*\.?\d*$/.test(val)) handleUpdate(item.id, 'idealPrice', val);
+                            }}
+                            onBlur={(e) => {
+                              const val = parseFloat(e.target.value);
+                              if (!isNaN(val)) handleUpdate(item.id, 'idealPrice', val.toFixed(2));
+                            }}
+                          />
+                        </div>
+                        <div className="stock-cell">
+                          <input 
+                            className="inline-input stock-input"
+                            type="number" 
+                            value={item.currentStock}
+                            onChange={(e) => handleUpdate(item.id, 'currentStock', e.target.value)}
+                          />
+                          <span className="unit-label">{item.unit}</span>
+                        </div>
+                        <div className="duration-cell">
+                          <div className="depletion-info">
+                            <span className="depletion-date">{calculateDepletionInfo(item).date}</span>
+                            {calculateDepletionInfo(item).days !== null && (<span className="depletion-days">({calculateDepletionInfo(item).days} dias)</span>)}
+                          </div>
+                        </div>
+                        <div className="buy-cell">
+                          <div className="buy-amount-wrapper">
+                            <span className="buy-value">{amountToBuyStr}</span>
+                            <span className="unit-label">{item.unit}</span>
+                          </div>
+                          {estimatedCost !== null && <span className="estimated-cost">R$ {estimatedCost}</span>}
+                        </div>
+                        <span className="expand-icon">{isExpanded ? '▼' : '▶'}</span>
+                      </div>
+                      {isExpanded && (
+                        <div className="expanded-details">
+                          <div className="detail-group">
+                            <span className="detail-label">Por Fornada</span>
+                            <span className="detail-value">{item.perBatch} {item.unit}</span>
+                          </div>
+                          <div className="detail-group">
+                            <span className="detail-label">Por Dia</span>
+                            <span className="detail-value">{usagePerDay.toFixed(1)} {item.unit}</span>
+                            {costPerDay !== null && <span className="estimated-cost">R$ {costPerDay}</span>}
+                          </div>
+                          <div className="detail-group">
+                            <span className="detail-label">Por Semana</span>
+                            <span className="detail-value">{usagePerWeek.toFixed(1)} {item.unit}</span>
+                            {costPerWeek !== null && <span className="estimated-cost">R$ {costPerWeek}</span>}
+                          </div>
+                          <div className="detail-divider"></div>
+                          <div className="detail-group highlight">
+                            <span className="detail-label">Comprar (1 sem.)</span>
+                            <span className="detail-value">{buy1Week} {item.unit}</span>
+                          </div>
+                          <div className="detail-group highlight">
+                            <span className="detail-label">Comprar (2 sem.)</span>
+                            <span className="detail-value">{buy2Weeks} {item.unit}</span>
+                          </div>
+                          <div className="detail-group highlight">
+                            <span className="detail-label">Comprar (3 sem.)</span>
+                            <span className="detail-value">{buy3Weeks} {item.unit}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+
+              <div className="financial-summary-panel">
+                <div className="summary-header">
+                  <h2>Projeção Estática de Gastos (Sem Estoque)</h2>
+                  <div className="toggle-wrapper" onClick={() => setUseIdealPrice(!useIdealPrice)}>
+                    <span className={`toggle-label ${!useIdealPrice ? 'active' : ''}`}>Preço Atual</span>
+                    <div className={`toggle-switch ${useIdealPrice ? 'on' : 'off'}`}><div className="toggle-knob"></div></div>
+                    <span className={`toggle-label ${useIdealPrice ? 'active' : ''}`}>Preço Ideal</span>
+                  </div>
+                </div>
+                <div className="summary-grid">
+                  {financialSummary.map(item => (
+                    <div key={item.id} className={`summary-item ${!item.isIncluded ? 'excluded' : ''}`}>
+                      <div className="item-header">
+                        <h4>{item.name}</h4>
+                        <input type="checkbox" checked={item.isIncluded} onChange={() => handleToggleSummaryItem(item.id)} className="summary-checkbox" />
+                      </div>
+                      <div className="summary-costs">
+                        <div className="cost-row">
+                          <span className="period">Unid. (1 bolo)</span>
+                          <div className="value-stack">
+                            <span className="qty">{(item.usageCake % 1 === 0 ? item.usageCake : item.usageCake.toFixed(3))} {item.unit}</span>
+                            <span className="value">{item.validPrice ? `R$ ${item.costCake.toFixed(2)}` : '--'}</span>
+                          </div>
+                        </div>
+                        <div className="cost-row">
+                          <span className="period">Semana (6d)</span>
+                          <div className="value-stack">
+                            <span className="qty">{(item.usageWeek % 1 === 0 ? item.usageWeek : item.usageWeek.toFixed(1))} {item.unit}</span>
+                            <span className="value">{item.validPrice ? `R$ ${item.costWeek.toFixed(2)}` : '--'}</span>
+                          </div>
+                        </div>
+                        <div className="cost-row">
+                          <span className="period">Mês (26d)</span>
+                          <div className="value-stack">
+                            <span className="qty">{(item.usageMonth % 1 === 0 ? item.usageMonth : item.usageMonth.toFixed(1))} {item.unit}</span>
+                            <span className="value">{item.validPrice ? `R$ ${item.costMonth.toFixed(2)}` : '--'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="summary-item total-comparison">
+                    <div className="section-header-compact"><h2>Total Operacional</h2></div>
+                    <div className="comparison-grid">
+                      <div className="comparison-header">
+                        <span>Período</span>
+                        <span className={!useIdealPrice ? 'active' : ''}>Preço Atual</span>
+                        <span className={useIdealPrice ? 'active' : ''}>Preço Ideal</span>
+                      </div>
+                      <div className="comparison-row">
+                        <span className="period">Por 1 Bolo</span>
+                        <span className={`value ${!useIdealPrice ? 'highlight-secondary' : ''}`}>R$ {actualTotals.cake.toFixed(2)}</span>
+                        <span className={`value ${useIdealPrice ? 'highlight-secondary' : ''}`}>R$ {idealTotals.cake.toFixed(2)}</span>
+                      </div>
+                      <div className="comparison-row">
+                        <span className="period">Semanal (6d)</span>
+                        <span className={`value ${!useIdealPrice ? 'highlight-secondary' : ''}`}>R$ {actualTotals.week.toFixed(2)}</span>
+                        <span className={`value ${useIdealPrice ? 'highlight-secondary' : ''}`}>R$ {idealTotals.week.toFixed(2)}</span>
+                      </div>
+                      <div className="comparison-row">
+                        <span className="period">Mensal (26d)</span>
+                        <span className={`value ${!useIdealPrice ? 'highlight' : ''}`}>R$ {actualTotals.month.toFixed(2)}</span>
+                        <span className={`value ${useIdealPrice ? 'highlight' : ''}`}>R$ {idealTotals.month.toFixed(2)}</span>
+                      </div>
+                    </div>
+                    {showYeastNote && (
+                      <p className="total-footnote">* Fermento sem preço real informado — valor ideal (R$ {parseFloat(ingredients.find(i => i.id === 'yeast')?.idealPrice || 0).toFixed(2)}) usado como estimativa no Preço Atual.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        }
+
+        // ══ Auth Wrapper ══
+        function AuthWrapper() {
+          const [user, setUser] = useState(null);
+          const [checking, setChecking] = useState(true);
+
+          useEffect(() => {
+            const unsub = auth.onAuthStateChanged((u) => {
+              if (u && ALLOWED_EMAILS.includes(u.email.toLowerCase())) {
+                setUser(u);
+              } else {
+                setUser(null);
+              }
+              setChecking(false);
+            });
+            return () => unsub();
+          }, []);
+
+          if (checking) return (
+            <div className="login-screen">
+              <div className="login-loading">Carregando...</div>
+            </div>
+          );
+
+          if (!user) return <LoginScreen />;
+
+          return <App user={user} />;
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<AuthWrapper />);
+    </script>
+</body>
+</html>
