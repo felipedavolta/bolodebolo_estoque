@@ -1100,16 +1100,16 @@
             return () => unsubscribe();
           }, []);
 
-          // ── Firestore: salva com debounce de 800ms ──
+          // ── Firestore: salva com debounce de 1000ms ──
           const saveToFirestore = useCallback((data) => {
             if (!initialLoadDone.current) return;
-            setSyncStatus('saving');
             clearTimeout(saveTimerRef.current);
             saveTimerRef.current = setTimeout(() => {
+              setSyncStatus('saving');
               dataDocRef.set(data, { merge: true })
                 .then(() => setSyncStatus('ok'))
                 .catch((err) => { console.error('Save error:', err); setSyncStatus('error'); });
-            }, 800);
+            }, 1000);
           }, []);
 
           useEffect(() => {
