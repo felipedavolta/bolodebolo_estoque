@@ -455,7 +455,12 @@
         }
 
         .list-header {
-          display: none;
+          display: grid;
+          grid-template-columns: repeat(6, 1fr);
+          padding: 20px 30px;
+          background: #f8f9fa;
+          border-bottom: 1px solid var(--border-color);
+          text-align: center;
         }
 
         .header-label {
@@ -488,11 +493,12 @@
         }
 
         .ingredient-row {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          padding: 16px 20px;
+          display: grid;
+          grid-template-columns: repeat(6, 1fr);
+          padding: 15px 30px;
+          align-items: center;
           transition: background 0.2s ease;
+          text-align: center;
           position: relative;
           cursor: pointer;
         }
@@ -507,8 +513,7 @@
 
         .expand-icon {
           position: absolute;
-          top: 16px;
-          right: 16px;
+          right: 25px;
           font-size: 0.8rem;
           color: var(--text-secondary);
           transition: all 0.2s;
@@ -518,15 +523,13 @@
           font-size: 1.1rem;
           font-weight: 700;
           color: var(--text-primary);
+          text-align: center;
           margin: 0;
           transition: color 0.2s;
         }
 
         .ingredient-row-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 12px;
+          display: none;
         }
 
         .ingredient-row-header .name-cell {
@@ -540,12 +543,12 @@
         .name-cell, .price-pill-cell, .ideal-price-cell, .stock-cell, .duration-cell, .buy-cell {
           display: flex;
           align-items: center;
-          justify-content: flex-start;
+          justify-content: center;
         }
 
         .ideal-price-cell {
           gap: 2px;
-          display: none;
+          display: flex;
         }
 
         .ideal-price-cell .inline-input {
@@ -553,7 +556,7 @@
         }
 
         .stock-input {
-          font-size: 1.15rem;
+          font-size: 1.2rem;
           font-weight: 800;
           width: 70px;
         }
@@ -563,27 +566,15 @@
         }
 
         .ingredient-row-stock-date {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 12px;
-          padding-top: 8px;
-          border-top: 1px solid #e9ecef;
+          display: none;
         }
 
         .stock-cell {
-          gap: 6px;
-          flex: 1;
+          gap: 2px;
         }
 
         .ingredient-row-buy {
-          background: var(--accent-light);
-          padding: 10px;
-          border-radius: 8px;
-          margin-top: 4px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
+          display: none;
         }
 
         .buy-cell {
@@ -594,14 +585,14 @@
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 6px 12px;
+          padding: 8px 16px;
           border-radius: 50px;
           font-weight: 700;
-          font-size: 0.85rem;
+          font-size: 0.9rem;
           text-decoration: none;
           cursor: pointer;
           transition: transform 0.2s, opacity 0.2s;
-          white-space: nowrap;
+          min-width: 100px;
         }
 
         .price-pill:hover {
@@ -787,6 +778,94 @@
 
         @media (max-width: 900px) {
           .list-header { display: none; }
+          
+          .ingredient-row {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 16px 20px;
+            text-align: left;
+          }
+
+          .expand-icon {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+          }
+
+          .ingredient-row-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+          }
+
+          .ingredient-row-header .name-cell {
+            flex: 1;
+          }
+
+          .ingredient-row-header .price-pill-cell {
+            flex-shrink: 0;
+          }
+
+          .name-cell, .price-pill-cell, .ideal-price-cell, .stock-cell, .duration-cell, .buy-cell {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+          }
+
+          .ideal-price-cell {
+            display: none;
+          }
+
+          .ingredient-row-stock-date {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding-top: 8px;
+            border-top: 1px solid #e9ecef;
+          }
+
+          .stock-cell {
+            gap: 6px;
+            flex: 1;
+          }
+
+          .ingredient-row-buy {
+            background: var(--accent-light);
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+
+          .price-pill {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            min-width: auto;
+            white-space: nowrap;
+          }
+
+          .multi-prices {
+            display: flex;
+            flex-direction: row;
+            gap: 6px;
+            padding: 0;
+            align-items: center;
+            flex-wrap: wrap;
+          }
+
+          .multi-prices .store-tag {
+            display: none;
+          }
+
+          .multi-prices .price-pill {
+            flex-direction: row;
+            min-width: auto;
+          }
         }
 
         .financial-summary-panel {
