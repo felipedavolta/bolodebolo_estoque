@@ -455,12 +455,7 @@
         }
 
         .list-header {
-          display: grid;
-          grid-template-columns: repeat(6, 1fr);
-          padding: 20px 30px;
-          background: #f8f9fa;
-          border-bottom: 1px solid var(--border-color);
-          text-align: center;
+          display: none;
         }
 
         .header-label {
@@ -493,12 +488,11 @@
         }
 
         .ingredient-row {
-          display: grid;
-          grid-template-columns: repeat(6, 1fr);
-          padding: 15px 30px;
-          align-items: center;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          padding: 16px 20px;
           transition: background 0.2s ease;
-          text-align: center;
           position: relative;
           cursor: pointer;
         }
@@ -507,13 +501,14 @@
           background: #fafbfc;
         }
 
-        .ingredient-row:hover .name-cell h3, .ingredient-row:hover .expand-icon {
+        .ingredient-row:hover .name-cell h3 {
           color: var(--accent-color);
         }
 
         .expand-icon {
           position: absolute;
-          right: 25px;
+          top: 16px;
+          right: 16px;
           font-size: 0.8rem;
           color: var(--text-secondary);
           transition: all 0.2s;
@@ -523,19 +518,34 @@
           font-size: 1.1rem;
           font-weight: 700;
           color: var(--text-primary);
-          text-align: center;
           margin: 0;
           transition: color 0.2s;
+        }
+
+        .ingredient-row-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .ingredient-row-header .name-cell {
+          flex: 1;
+        }
+
+        .ingredient-row-header .price-pill-cell {
+          flex-shrink: 0;
         }
 
         .name-cell, .price-pill-cell, .ideal-price-cell, .stock-cell, .duration-cell, .buy-cell {
           display: flex;
           align-items: center;
-          justify-content: center;
+          justify-content: flex-start;
         }
 
         .ideal-price-cell {
           gap: 2px;
+          display: none;
         }
 
         .ideal-price-cell .inline-input {
@@ -543,7 +553,7 @@
         }
 
         .stock-input {
-          font-size: 1.2rem;
+          font-size: 1.15rem;
           font-weight: 800;
           width: 70px;
         }
@@ -552,8 +562,28 @@
           width: 80px;
         }
 
+        .ingredient-row-stock-date {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          padding-top: 8px;
+          border-top: 1px solid #e9ecef;
+        }
+
         .stock-cell {
-          gap: 2px;
+          gap: 6px;
+          flex: 1;
+        }
+
+        .ingredient-row-buy {
+          background: var(--accent-light);
+          padding: 10px;
+          border-radius: 8px;
+          margin-top: 4px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
         }
 
         .buy-cell {
@@ -564,14 +594,14 @@
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 8px 16px;
+          padding: 6px 12px;
           border-radius: 50px;
           font-weight: 700;
-          font-size: 0.9rem;
+          font-size: 0.85rem;
           text-decoration: none;
           cursor: pointer;
           transition: transform 0.2s, opacity 0.2s;
-          min-width: 100px;
+          white-space: nowrap;
         }
 
         .price-pill:hover {
@@ -598,9 +628,12 @@
         }
 
         .multi-prices {
-          flex-direction: column;
-          gap: 8px;
-          padding: 10px 0;
+          display: flex;
+          flex-direction: row;
+          gap: 6px;
+          padding: 0;
+          align-items: center;
+          flex-wrap: wrap;
         }
 
         .price-pill .store-tag {
@@ -630,18 +663,18 @@
           transform: none;
           opacity: 1;
           background: transparent;
-          color: inherit;
-          font-size: 0.6rem;
+          color: inherits;
+          font-size: 0.65rem;
           text-transform: uppercase;
           letter-spacing: 0.5px;
-          margin-bottom: -2px;
-          display: block;
+          margin: 0;
+          display: none;
         }
 
         .multi-prices .price-pill {
-          flex-direction: column;
+          flex-direction: row;
           padding: 6px 12px;
-          min-width: 120px;
+          min-width: auto;
         }
 
         .unit-label {
@@ -754,8 +787,6 @@
 
         @media (max-width: 900px) {
           .list-header { display: none; }
-          .ingredient-row { grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; }
-          .buy-cell { grid-column: span 2; background: var(--accent-light); padding: 15px; border-radius: 12px; text-align: center; }
         }
 
         .financial-summary-panel {
@@ -1561,85 +1592,77 @@
                           setExpandedRow(isExpanded ? null : item.id);
                         }}
                       >
-                        <div className="name-cell"><h3>{item.name}</h3></div>
-                        <div className="price-pill-cell multi-prices">
-                          {item.id === 'yeast' ? (
-                             <div className="manual-price-wrapper">
-                               <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>R$</span>
-                               <input 
-                                 className="inline-input manual-input"
-                                 type="text" 
-                                 inputMode="decimal"
-                                 value={item.price !== null ? item.price : ''}
-                                 onChange={(e) => {
-                                   const rawValue = e.target.value.replace(/\D/g, '');
-                                   if (rawValue === '') { handleUpdate(item.id, 'price', null); return; }
-                                   const val = (parseFloat(rawValue) / 100).toFixed(2);
-                                   handleUpdate(item.id, 'price', val);
-                                 }}
-                                 placeholder="0.00"
-                               />
-                               <span className="manual-icon">✎</span>
-                             </div>
-                          ) : item.sources ? (
-                            item.sources.map((source, idx) => (
-                              <a 
-                                key={idx}
-                                href={source.link || '#'} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className={`price-pill ${source.price <= item.idealPrice ? 'good' : 'bad'}`}
-                                title={source.name}
-                              >
-                                <span className="store-tag">{source.name}</span>
-                                R$ {source.price.toFixed(2)}
+                        {/* Header: Name + Price */}
+                        <div className="ingredient-row-header">
+                          <div className="name-cell"><h3>{item.name}</h3></div>
+                          <div className="price-pill-cell multi-prices">
+                            {item.id === 'yeast' ? (
+                               <div className="manual-price-wrapper">
+                                 <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>R$</span>
+                                 <input 
+                                   className="inline-input manual-input"
+                                   type="text" 
+                                   inputMode="decimal"
+                                   value={item.price !== null ? item.price : ''}
+                                   onChange={(e) => {
+                                     const rawValue = e.target.value.replace(/\D/g, '');
+                                     if (rawValue === '') { handleUpdate(item.id, 'price', null); return; }
+                                     const val = (parseFloat(rawValue) / 100).toFixed(2);
+                                     handleUpdate(item.id, 'price', val);
+                                   }}
+                                   placeholder="0.00"
+                                 />
+                                 <span className="manual-icon">✎</span>
+                               </div>
+                            ) : item.sources ? (
+                              item.sources.map((source, idx) => (
+                                <a 
+                                  key={idx}
+                                  href={source.link || '#'} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className={`price-pill ${source.price <= item.idealPrice ? 'good' : 'bad'}`}
+                                  title={source.name}
+                                >
+                                  <span className="store-tag">{source.name}</span>
+                                  R$ {source.price.toFixed(2)}
+                                </a>
+                              ))
+                            ) : showPrice ? (
+                              <a href={item.link || '#'} target="_blank" rel="noopener noreferrer" className={`price-pill ${isGoodPrice ? 'good' : 'bad'}`}>
+                                R$ {parseFloat(item.price).toFixed(2)}
                               </a>
-                            ))
-                          ) : showPrice ? (
-                            <a href={item.link || '#'} target="_blank" rel="noopener noreferrer" className={`price-pill ${isGoodPrice ? 'good' : 'bad'}`}>
-                              R$ {parseFloat(item.price).toFixed(2)}
-                            </a>
-                          ) : <span className="price-pill neutral" style={{ opacity: 0.5 }}>--</span>}
-                        </div>
-                        <div className="ideal-price-cell">
-                          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>R$</span>
-                          <input 
-                            className="inline-input ideal-input"
-                            type="text" 
-                            inputMode="decimal"
-                            value={item.idealPrice}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (/^\d*\.?\d*$/.test(val)) handleUpdate(item.id, 'idealPrice', val);
-                            }}
-                            onBlur={(e) => {
-                              const val = parseFloat(e.target.value);
-                              if (!isNaN(val)) handleUpdate(item.id, 'idealPrice', val.toFixed(2));
-                            }}
-                          />
-                        </div>
-                        <div className="stock-cell">
-                          <input 
-                            className="inline-input stock-input"
-                            type="number" 
-                            value={item.currentStock}
-                            onChange={(e) => handleUpdate(item.id, 'currentStock', e.target.value)}
-                          />
-                          <span className="unit-label">{item.unit}</span>
-                        </div>
-                        <div className="duration-cell">
-                          <div className="depletion-info">
-                            <span className="depletion-date">{calculateDepletionInfo(item).date}</span>
-                            {calculateDepletionInfo(item).days !== null && (<span className="depletion-days">({calculateDepletionInfo(item).days} dias)</span>)}
+                            ) : <span className="price-pill neutral" style={{ opacity: 0.5 }}>--</span>}
                           </div>
                         </div>
-                        <div className="buy-cell">
-                          <div className="buy-amount-wrapper">
-                            <span className="buy-value">{amountToBuyStr}</span>
+
+                        {/* Stock + Duration */}
+                        <div className="ingredient-row-stock-date">
+                          <div className="stock-cell">
+                            <input 
+                              className="inline-input stock-input"
+                              type="number" 
+                              value={item.currentStock}
+                              onChange={(e) => handleUpdate(item.id, 'currentStock', e.target.value)}
+                            />
                             <span className="unit-label">{item.unit}</span>
                           </div>
-                          {estimatedCost !== null && <span className="estimated-cost">R$ {estimatedCost}</span>}
+                          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                            <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{calculateDepletionInfo(item).date}</span>
+                            {calculateDepletionInfo(item).days !== null && (<span style={{ marginLeft: '6px' }}>({calculateDepletionInfo(item).days}d)</span>)}
+                          </div>
                         </div>
+
+                        {/* Buy Amount */}
+                        <div className="ingredient-row-buy">
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>A Comprar</span>
+                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                            <span className="buy-value" style={{ fontSize: '1.1rem' }}>{amountToBuyStr}</span>
+                            <span className="unit-label">{item.unit}</span>
+                            {estimatedCost !== null && <span style={{ fontWeight: 600, color: 'var(--accent-color)' }}>R$ {estimatedCost}</span>}
+                          </div>
+                        </div>
+
                         <span className="expand-icon">{isExpanded ? '▼' : '▶'}</span>
                       </div>
                       {isExpanded && (
