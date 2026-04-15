@@ -327,6 +327,20 @@
           transition: all 0.2s;
           white-space: nowrap;
         }
+        
+        .paste-btn {
+          background: none;
+          color: var(--accent-color);
+          border: none;
+          padding: 6px 10px;
+          border-radius: 6px;
+          font-size: 1.2rem;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .paste-btn:hover {
+          background: var(--accent-light);
+        }
 .import-btn.synced {
   background: var(--accent-color);
   color: white;
@@ -1077,7 +1091,15 @@
 
           const [syncStatus, setSyncStatus] = useState('loading'); // 'loading' | 'ok' | 'saving' | 'error'
           const [saveError, setSaveError] = useState(null);
-          const [lastSavedAt, setLastSavedAt] = useState(null);
+          const [lastSavedAt, setLastSavedAt] = useState(() => {
+            try {
+              const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
+              const lastTime = localStorage.getItem(LOCAL_STORAGE_KEY + '_lastSavedAt');
+              return lastTime || null;
+            } catch (err) {
+              return null;
+            }
+          });
           const initialLoadDone = useRef(false);
           const saveTimerRef = useRef(null);
 
@@ -1105,6 +1127,10 @@
                 }
                 initialLoadDone.current = true;
                 setSyncStatus('ok');
+                const lastTime = localStorage.getItem(LOCAL_STORAGE_KEY + '_lastSavedAt');
+                if (lastTime) setLastSavedAt(lastTime);
+                const lastTime = localStorage.getItem(LOCAL_STORAGE_KEY + '_lastSavedAt');
+                if (lastTime) setLastSavedAt(lastTime);
               },
               (err) => {
                 console.error('Firestore listen error:', err);
@@ -1125,9 +1151,11 @@
               localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
               dataDocRef.set(data, { merge: true })
                 .then(() => {
+                  const now = new Date().toLocaleTimeString();
                   setSyncStatus('ok');
                   setSaveError(null);
-                  setLastSavedAt(new Date().toLocaleTimeString());
+                  setLastSavedAt(now);
+                  localStorage.setItem(LOCAL_STORAGE_KEY + '_lastSavedAt', now);
                   console.log('Dados salvos no Firestore:', data);
                 })
                 .catch((err) => {
@@ -1148,9 +1176,11 @@
             const data = { ingredients, salesPerDay, targetDate };
             dataDocRef.set(data, { merge: true })
               .then(() => {
+                const now = new Date().toLocaleTimeString();
                 setSyncStatus('ok');
                 setSaveError(null);
-                setLastSavedAt(new Date().toLocaleTimeString());
+                setLastSavedAt(now);
+                localStorage.setItem(LOCAL_STORAGE_KEY + '_lastSavedAt', now);
               })
               .catch((err) => {
                 console.error('Save error:', err);
@@ -1444,8 +1474,8 @@
                     <span className={`sync-dot ${syncStatus}`}></span>
                     {syncStatus === 'ok' ? `Salvo${lastSavedAt ? ` às ${lastSavedAt}` : ''}` : syncStatus === 'saving' ? 'Salvando...' : syncStatus === 'error' ? `Erro: ${saveError || 'tente novamente'}` : ''}
                   </span>
-                  <button className="import-btn" onClick={() => setPasteMode(true)}>
-                    Colar Estoque
+                  <button className="paste-btn" onClick={() => setPasteMode(true)} title="Colar estoque da planilha">
+                    📋
                   </button>
                   <div className="user-bar">
                     <img className="user-avatar" src={user.photoURL} alt="" />
