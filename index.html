@@ -1116,47 +1116,45 @@
             return () => unsubscribe();
           }, []);
 
-          // ── Firestore: salva com debounce de 1000ms ──
+          // ── Firestore: salva imediatamente ──
           const saveToFirestore = useCallback((data) => {
             if (!initialLoadDone.current) return;
+            setSyncStatus('saving');
             clearTimeout(saveTimerRef.current);
-            saveTimerRef.current = setTimeout(() => {
-              setSyncStatus('saving');
-              dataDocRef.set(data, { merge: true })
-                .then(() => {
-                  setSyncStatus('ok');
-                  setSaveError(null);
-                  setLastSavedAt(new Date().toLocaleTimeString());
-                  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
-                })
-                .catch((err) => {
-                  console.error('Save error:', err);
-                  setSyncStatus('error');
-                  setSaveError(err.message || 'Erro ao salvar');
-                });
-            }, 1000);
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+            dataDocRef.set(data, { merge: true })
+              .then(() => {
+                setSyncStatus('ok');
+                setSaveError(null);
+                setLastSavedAt(new Date().toLocaleTimeString());
+                console.log('Dados salvos no Firestore:', data);
+              })
+              .catch((err) => {
+                console.error('Erro ao salvar no Firestore:', err);
+                setSyncStatus('error');
+                setSaveError(err.message || 'Erro ao salvar');
+              });
           }, []);
+
+          useEffect(() => {
+            if (!initialLoadDone.current) return;
+            saveToFirestore({ ingredients, salesPerDay, targetDate });
+          }, [salesPerDay, targetDate, ingredients, saveToFirestore]);
 
           const flushPendingSave = useCallback(() => {
             if (!initialLoadDone.current) return;
-            if (saveTimerRef.current) {
-              clearTimeout(saveTimerRef.current);
-              saveTimerRef.current = null;
-              setSyncStatus('saving');
-              const data = { ingredients, salesPerDay, targetDate };
-              dataDocRef.set(data, { merge: true })
-                .then(() => {
-                  setSyncStatus('ok');
-                  setSaveError(null);
-                  setLastSavedAt(new Date().toLocaleTimeString());
-                  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
-                })
-                .catch((err) => {
-                  console.error('Save error:', err);
-                  setSyncStatus('error');
-                  setSaveError(err.message || 'Erro ao salvar');
-                });
-            }
+            const data = { ingredients, salesPerDay, targetDate };
+            dataDocRef.set(data, { merge: true })
+              .then(() => {
+                setSyncStatus('ok');
+                setSaveError(null);
+                setLastSavedAt(new Date().toLocaleTimeString());
+              })
+              .catch((err) => {
+                console.error('Save error:', err);
+                setSyncStatus('error');
+                setSaveError(err.message || 'Erro ao salvar');
+              });
           }, [ingredients, salesPerDay, targetDate]);
 
           useEffect(() => {
@@ -1408,7 +1406,6 @@
                     className="input-highlight"
                     value={salesPerDay} 
                     onChange={(e) => setSalesPerDay(parseFloat(e.target.value) || 0)}
-                    onBlur={() => saveToFirestore({ ingredients, salesPerDay, targetDate })}
                   />
                 </div>
                 <div className="input-group relative">
@@ -1540,7 +1537,6 @@
                                    const val = (parseFloat(rawValue) / 100).toFixed(2);
                                    handleUpdate(item.id, 'price', val);
                                  }}
-                                 onBlur={() => saveToFirestore({ ingredients, salesPerDay, targetDate })}
                                  placeholder="0.00"
                                />
                                <span className="manual-icon">✎</span>
@@ -1579,7 +1575,6 @@
                             onBlur={(e) => {
                               const val = parseFloat(e.target.value);
                               if (!isNaN(val)) handleUpdate(item.id, 'idealPrice', val.toFixed(2));
-                              saveToFirestore({ ingredients, salesPerDay, targetDate });
                             }}
                           />
                         </div>
@@ -1589,7 +1584,6 @@
                             type="number" 
                             value={item.currentStock}
                             onChange={(e) => handleUpdate(item.id, 'currentStock', e.target.value)}
-                            onBlur={() => saveToFirestore({ ingredients, salesPerDay, targetDate })}
                           />
                           <span className="unit-label">{item.unit}</span>
                         </div>
