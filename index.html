@@ -1671,77 +1671,85 @@
                           setExpandedRow(isExpanded ? null : item.id);
                         }}
                       >
-                        {/* Header: Name + Price */}
-                        <div className="ingredient-row-header">
-                          <div className="name-cell"><h3>{item.name}</h3></div>
-                          <div className="price-pill-cell multi-prices">
-                            {item.id === 'yeast' ? (
-                               <div className="manual-price-wrapper">
-                                 <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>R$</span>
-                                 <input 
-                                   className="inline-input manual-input"
-                                   type="text" 
-                                   inputMode="decimal"
-                                   value={item.price !== null ? item.price : ''}
-                                   onChange={(e) => {
-                                     const rawValue = e.target.value.replace(/\D/g, '');
-                                     if (rawValue === '') { handleUpdate(item.id, 'price', null); return; }
-                                     const val = (parseFloat(rawValue) / 100).toFixed(2);
-                                     handleUpdate(item.id, 'price', val);
-                                   }}
-                                   placeholder="0.00"
-                                 />
-                                 <span className="manual-icon">✎</span>
-                               </div>
-                            ) : item.sources ? (
-                              item.sources.map((source, idx) => (
-                                <a 
-                                  key={idx}
-                                  href={source.link || '#'} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer" 
-                                  className={`price-pill ${source.price <= item.idealPrice ? 'good' : 'bad'}`}
-                                  title={source.name}
-                                >
-                                  <span className="store-tag">{source.name}</span>
-                                  R$ {source.price.toFixed(2)}
-                                </a>
-                              ))
-                            ) : showPrice ? (
-                              <a href={item.link || '#'} target="_blank" rel="noopener noreferrer" className={`price-pill ${isGoodPrice ? 'good' : 'bad'}`}>
-                                R$ {parseFloat(item.price).toFixed(2)}
+                        <div className="name-cell"><h3>{item.name}</h3></div>
+                        <div className="price-pill-cell multi-prices">
+                          {item.id === 'yeast' ? (
+                             <div className="manual-price-wrapper">
+                               <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>R$</span>
+                               <input 
+                                 className="inline-input manual-input"
+                                 type="text" 
+                                 inputMode="decimal"
+                                 value={item.price !== null ? item.price : ''}
+                                 onChange={(e) => {
+                                   const rawValue = e.target.value.replace(/\D/g, '');
+                                   if (rawValue === '') { handleUpdate(item.id, 'price', null); return; }
+                                   const val = (parseFloat(rawValue) / 100).toFixed(2);
+                                   handleUpdate(item.id, 'price', val);
+                                 }}
+                                 placeholder="0.00"
+                               />
+                               <span className="manual-icon">✎</span>
+                             </div>
+                          ) : item.sources ? (
+                            item.sources.map((source, idx) => (
+                              <a 
+                                key={idx}
+                                href={source.link || '#'} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className={`price-pill ${source.price <= item.idealPrice ? 'good' : 'bad'}`}
+                                title={source.name}
+                              >
+                                <span className="store-tag">{source.name}</span>
+                                R$ {source.price.toFixed(2)}
                               </a>
-                            ) : <span className="price-pill neutral" style={{ opacity: 0.5 }}>--</span>}
+                            ))
+                          ) : showPrice ? (
+                            <a href={item.link || '#'} target="_blank" rel="noopener noreferrer" className={`price-pill ${isGoodPrice ? 'good' : 'bad'}`}>
+                              R$ {parseFloat(item.price).toFixed(2)}
+                            </a>
+                          ) : <span className="price-pill neutral" style={{ opacity: 0.5 }}>--</span>}
+                        </div>
+                        <div className="ideal-price-cell">
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>R$</span>
+                          <input 
+                            className="inline-input ideal-input"
+                            type="text" 
+                            inputMode="decimal"
+                            value={item.idealPrice}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (/^\d*\.?\d*$/.test(val)) handleUpdate(item.id, 'idealPrice', val);
+                            }}
+                            onBlur={(e) => {
+                              const val = parseFloat(e.target.value);
+                              if (!isNaN(val)) handleUpdate(item.id, 'idealPrice', val.toFixed(2));
+                            }}
+                          />
+                        </div>
+                        <div className="stock-cell">
+                          <input 
+                            className="inline-input stock-input"
+                            type="number" 
+                            value={item.currentStock}
+                            onChange={(e) => handleUpdate(item.id, 'currentStock', e.target.value)}
+                          />
+                          <span className="unit-label">{item.unit}</span>
+                        </div>
+                        <div className="duration-cell">
+                          <div className="depletion-info">
+                            <span className="depletion-date">{calculateDepletionInfo(item).date}</span>
+                            {calculateDepletionInfo(item).days !== null && (<span className="depletion-days">({calculateDepletionInfo(item).days} dias)</span>)}
                           </div>
                         </div>
-
-                        {/* Stock + Duration */}
-                        <div className="ingredient-row-stock-date">
-                          <div className="stock-cell">
-                            <input 
-                              className="inline-input stock-input"
-                              type="number" 
-                              value={item.currentStock}
-                              onChange={(e) => handleUpdate(item.id, 'currentStock', e.target.value)}
-                            />
+                        <div className="buy-cell">
+                          <div className="buy-amount-wrapper">
+                            <span className="buy-value">{amountToBuyStr}</span>
                             <span className="unit-label">{item.unit}</span>
                           </div>
-                          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                            <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{calculateDepletionInfo(item).date}</span>
-                            {calculateDepletionInfo(item).days !== null && (<span style={{ marginLeft: '6px' }}>({calculateDepletionInfo(item).days}d)</span>)}
-                          </div>
+                          {estimatedCost !== null && <span className="estimated-cost">R$ {estimatedCost}</span>}
                         </div>
-
-                        {/* Buy Amount */}
-                        <div className="ingredient-row-buy">
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>A Comprar</span>
-                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                            <span className="buy-value" style={{ fontSize: '1.1rem' }}>{amountToBuyStr}</span>
-                            <span className="unit-label">{item.unit}</span>
-                            {estimatedCost !== null && <span style={{ fontWeight: 600, color: 'var(--accent-color)' }}>R$ {estimatedCost}</span>}
-                          </div>
-                        </div>
-
                         <span className="expand-icon">{isExpanded ? '▼' : '▶'}</span>
                       </div>
                       {isExpanded && (
