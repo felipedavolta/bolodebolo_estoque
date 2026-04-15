@@ -1112,10 +1112,30 @@
             }, 1000);
           }, []);
 
+          const flushPendingSave = useCallback(() => {
+            if (!initialLoadDone.current) return;
+            if (saveTimerRef.current) {
+              clearTimeout(saveTimerRef.current);
+              saveTimerRef.current = null;
+              setSyncStatus('saving');
+              dataDocRef.set({ ingredients, salesPerDay, targetDate }, { merge: true })
+                .then(() => setSyncStatus('ok'))
+                .catch((err) => { console.error('Save error:', err); setSyncStatus('error'); });
+            }
+          }, [ingredients, salesPerDay, targetDate]);
+
           useEffect(() => {
             if (!initialLoadDone.current) return;
             saveToFirestore({ ingredients, salesPerDay, targetDate });
           }, [salesPerDay, targetDate, ingredients, saveToFirestore]);
+
+          useEffect(() => {
+            const handleBeforeUnload = (event) => {
+              flushPendingSave();
+            };
+            window.addEventListener('beforeunload', handleBeforeUnload);
+            return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+          }, [flushPendingSave]);
 
           const handleImportPaste = () => {
             const numbers = pasteData.split(/\s+/).map(n => n.replace(',', '.')).filter(n => n !== '' && !isNaN(parseFloat(n)));
@@ -1353,6 +1373,7 @@
                     className="input-highlight"
                     value={salesPerDay} 
                     onChange={(e) => setSalesPerDay(parseFloat(e.target.value) || 0)}
+                    onBlur={() => saveToFirestore({ ingredients, salesPerDay, targetDate })}
                   />
                 </div>
                 <div className="input-group relative">
@@ -1484,6 +1505,7 @@
                                    const val = (parseFloat(rawValue) / 100).toFixed(2);
                                    handleUpdate(item.id, 'price', val);
                                  }}
+                                 onBlur={() => saveToFirestore({ ingredients, salesPerDay, targetDate })}
                                  placeholder="0.00"
                                />
                                <span className="manual-icon">✎</span>
@@ -1522,6 +1544,7 @@
                             onBlur={(e) => {
                               const val = parseFloat(e.target.value);
                               if (!isNaN(val)) handleUpdate(item.id, 'idealPrice', val.toFixed(2));
+                              saveToFirestore({ ingredients, salesPerDay, targetDate });
                             }}
                           />
                         </div>
@@ -1531,6 +1554,7 @@
                             type="number" 
                             value={item.currentStock}
                             onChange={(e) => handleUpdate(item.id, 'currentStock', e.target.value)}
+                            onBlur={() => saveToFirestore({ ingredients, salesPerDay, targetDate })}
                           />
                           <span className="unit-label">{item.unit}</span>
                         </div>
