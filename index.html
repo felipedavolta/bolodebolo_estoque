@@ -998,6 +998,7 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
         const dataDocRef = db.collection('estoque').doc('dados');
+        const LOCAL_STORAGE_KEY = 'estoque-precos-local';
 
         // ── Ingredientes padrão ──
         const DEFAULT_INGREDIENTS = [
@@ -1075,6 +1076,8 @@
           const [ingredients, setIngredients] = useState(() => mergeIngredients(DEFAULT_INGREDIENTS, null))
 
           const [syncStatus, setSyncStatus] = useState('loading'); // 'loading' | 'ok' | 'saving' | 'error'
+          const [saveError, setSaveError] = useState(null);
+          const [lastSavedAt, setLastSavedAt] = useState(null);
           const initialLoadDone = useRef(false);
           const saveTimerRef = useRef(null);
 
@@ -1087,6 +1090,18 @@
                   if (data.ingredients) setIngredients(mergeIngredients(DEFAULT_INGREDIENTS, data.ingredients));
                   if (data.salesPerDay !== undefined) setSalesPerDay(data.salesPerDay);
                   if (data.targetDate) setTargetDate(data.targetDate);
+                } else {
+                  const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
+                  if (localData) {
+                    try {
+                      const parsed = JSON.parse(localData);
+                      if (parsed.ingredients) setIngredients(mergeIngredients(DEFAULT_INGREDIENTS, parsed.ingredients));
+                      if (parsed.salesPerDay !== undefined) setSalesPerDay(parsed.salesPerDay);
+                      if (parsed.targetDate) setTargetDate(parsed.targetDate);
+                    } catch (err) {
+                      console.warn('Erro lendo localStorage', err);
+                    }
+                  }
                 }
                 initialLoadDone.current = true;
                 setSyncStatus('ok');
@@ -1094,6 +1109,7 @@
               (err) => {
                 console.error('Firestore listen error:', err);
                 setSyncStatus('error');
+                setSaveError(err.message || 'Erro ao conectar Firestore');
                 initialLoadDone.current = true;
               }
             );
@@ -1107,8 +1123,17 @@
             saveTimerRef.current = setTimeout(() => {
               setSyncStatus('saving');
               dataDocRef.set(data, { merge: true })
-                .then(() => setSyncStatus('ok'))
-                .catch((err) => { console.error('Save error:', err); setSyncStatus('error'); });
+                .then(() => {
+                  setSyncStatus('ok');
+                  setSaveError(null);
+                  setLastSavedAt(new Date().toLocaleTimeString());
+                  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+                })
+                .catch((err) => {
+                  console.error('Save error:', err);
+                  setSyncStatus('error');
+                  setSaveError(err.message || 'Erro ao salvar');
+                });
             }, 1000);
           }, []);
 
@@ -1118,9 +1143,19 @@
               clearTimeout(saveTimerRef.current);
               saveTimerRef.current = null;
               setSyncStatus('saving');
-              dataDocRef.set({ ingredients, salesPerDay, targetDate }, { merge: true })
-                .then(() => setSyncStatus('ok'))
-                .catch((err) => { console.error('Save error:', err); setSyncStatus('error'); });
+              const data = { ingredients, salesPerDay, targetDate };
+              dataDocRef.set(data, { merge: true })
+                .then(() => {
+                  setSyncStatus('ok');
+                  setSaveError(null);
+                  setLastSavedAt(new Date().toLocaleTimeString());
+                  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+                })
+                .catch((err) => {
+                  console.error('Save error:', err);
+                  setSyncStatus('error');
+                  setSaveError(err.message || 'Erro ao salvar');
+                });
             }
           }, [ingredients, salesPerDay, targetDate]);
 
@@ -1408,7 +1443,7 @@
                 <div className="input-group" style={{ marginLeft: 'auto', flexDirection: 'row', gap: '10px', alignItems: 'center' }}>
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                     <span className={`sync-dot ${syncStatus}`}></span>
-                    {syncStatus === 'ok' ? 'Salvo' : syncStatus === 'saving' ? 'Salvando...' : syncStatus === 'error' ? 'Erro' : ''}
+                    {syncStatus === 'ok' ? `Salvo${lastSavedAt ? ` às ${lastSavedAt}` : ''}` : syncStatus === 'saving' ? 'Salvando...' : syncStatus === 'error' ? `Erro: ${saveError || 'tente novamente'}` : ''}
                   </span>
                   <button className="import-btn" onClick={() => setPasteMode(true)}>
                     Colar Estoque
