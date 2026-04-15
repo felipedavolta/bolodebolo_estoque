@@ -329,17 +329,23 @@
         }
         
         .paste-btn {
-          background: none;
-          color: var(--accent-color);
+          background: var(--accent-color);
+          color: white;
           border: none;
-          padding: 6px 10px;
+          padding: 6px 12px;
           border-radius: 6px;
-          font-size: 1.2rem;
+          font-size: 1rem;
           cursor: pointer;
           transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 36px;
+          height: 36px;
         }
         .paste-btn:hover {
-          background: var(--accent-light);
+          opacity: 0.85;
+          transform: scale(1.05);
         }
 .import-btn.synced {
   background: var(--accent-color);
@@ -1473,7 +1479,10 @@
                     {syncStatus === 'ok' ? `Salvo${lastSavedAt ? ` às ${lastSavedAt}` : ''}` : syncStatus === 'saving' ? 'Salvando...' : syncStatus === 'error' ? `Erro: ${saveError || 'tente novamente'}` : ''}
                   </span>
                   <button className="paste-btn" onClick={() => setPasteMode(true)} title="Colar estoque da planilha">
-                    📋
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                      <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                    </svg>
                   </button>
                   <div className="user-bar">
                     <img className="user-avatar" src={user.photoURL} alt="" />
