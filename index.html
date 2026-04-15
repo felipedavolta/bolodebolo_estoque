@@ -1116,24 +1116,26 @@
             return () => unsubscribe();
           }, []);
 
-          // ── Firestore: salva imediatamente ──
+          // ── Firestore: salva com debounce de 1000ms ──
           const saveToFirestore = useCallback((data) => {
             if (!initialLoadDone.current) return;
-            setSyncStatus('saving');
             clearTimeout(saveTimerRef.current);
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
-            dataDocRef.set(data, { merge: true })
-              .then(() => {
-                setSyncStatus('ok');
-                setSaveError(null);
-                setLastSavedAt(new Date().toLocaleTimeString());
-                console.log('Dados salvos no Firestore:', data);
-              })
-              .catch((err) => {
-                console.error('Erro ao salvar no Firestore:', err);
-                setSyncStatus('error');
-                setSaveError(err.message || 'Erro ao salvar');
-              });
+            saveTimerRef.current = setTimeout(() => {
+              setSyncStatus('saving');
+              localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+              dataDocRef.set(data, { merge: true })
+                .then(() => {
+                  setSyncStatus('ok');
+                  setSaveError(null);
+                  setLastSavedAt(new Date().toLocaleTimeString());
+                  console.log('Dados salvos no Firestore:', data);
+                })
+                .catch((err) => {
+                  console.error('Erro ao salvar no Firestore:', err);
+                  setSyncStatus('error');
+                  setSaveError(err.message || 'Erro ao salvar');
+                });
+            }, 1000);
           }, []);
 
           useEffect(() => {
