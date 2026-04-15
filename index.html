@@ -1129,8 +1129,6 @@
                 setSyncStatus('ok');
                 const lastTime = localStorage.getItem(LOCAL_STORAGE_KEY + '_lastSavedAt');
                 if (lastTime) setLastSavedAt(lastTime);
-                const lastTime = localStorage.getItem(LOCAL_STORAGE_KEY + '_lastSavedAt');
-                if (lastTime) setLastSavedAt(lastTime);
               },
               (err) => {
                 console.error('Firestore listen error:', err);
